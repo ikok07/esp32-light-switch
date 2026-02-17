@@ -2,14 +2,20 @@
 // Created by Kok on 2/14/26.
 //
 
+#include "ble.h"
 #include "gap.h"
 
 #include "host/ble_gap.h"
 #include "services/gap/ble_svc_gap.h"
+#include "host/util/util.h"
+
+BLE_ErrorTypeDef start_adv(BLE_HandleTypeDef *hble);
+void format_addr(char *AddrStr, uint8_t Len, uint8_t Address[]);
 
 int on_gap_event(struct ble_gap_event *event, void *arg) {
     uint8_t err = 0;
     struct ble_gap_conn_desc desc;
+    BLE_HandleTypeDef *hble = (BLE_HandleTypeDef*)arg;
 
     switch (event->type) {
         case BLE_GAP_EVENT_CONNECT:
@@ -18,16 +24,19 @@ int on_gap_event(struct ble_gap_event *event, void *arg) {
                     BLE_GapEventCB(BLE_GAP_EVENT_CONN_FAILED, event, NULL);
                     return err;
                 }
+                hble->hconn = event->connect.conn_handle;
                 BLE_GapEventCB(BLE_GAP_EVENT_CONN_SUCCESS, event, &desc);
             } else {
                 // Connection failed, restart advertising
                 BLE_GapEventCB(BLE_GAP_EVENT_CONN_FAILED, event,  NULL);
-                BLE_StartAdvertising();
+                gap_start_adv(hble);
             }
             break;
         case BLE_GAP_EVENT_DISCONNECT:
             BLE_GapEventCB(BLE_GAP_EVENT_CONN_DISCONNECT, event,  NULL);
-            BLE_StartAdvertising();
+            hble->NotificationsEnabled = 0;
+            hble->hconn = 0;
+            gap_start_adv(hble);
             break;
         case BLE_GAP_EVENT_CONN_UPDATE:
             if ((err = ble_gap_conn_find(event->connect.conn_handle, &desc)) != 0) {
@@ -38,7 +47,9 @@ int on_gap_event(struct ble_gap_event *event, void *arg) {
             break;
         case BLE_GAP_EVENT_SUBSCRIBE:
             BLE_GapEventCB(BLE_GAP_EVENT_SUB, event, NULL);
+            hble->NotificationsEnabled = 1;
             break;
+
         default:
             break;
     }
@@ -62,7 +73,7 @@ BLE_ErrorTypeDef gap_init(BLE_HandleTypeDef *hble) {
     return BLE_ERROR_OK;
 }
 
-BLE_ErrorTypeDef gap_start_adv(BLE_HandleTypeDef *hble) {
+BLE_ErrorTypeDef start_adv(BLE_HandleTypeDef *hble) {
     if (hble == NULL) return BLE_ERROR_MISSING_HANDLE;
     uint8_t err = 0;
 
@@ -107,6 +118,9 @@ BLE_ErrorTypeDef gap_start_adv(BLE_HandleTypeDef *hble) {
     rsp_fields.adv_itvl = BLE_GAP_ADV_ITVL_MS(hble->Config.AdvertisingIntervalMS);
     rsp_fields.adv_itvl_is_present = 1;
 
+    // Call callback (used to set the advertised services)
+    BLE_AdvertiseSvcsCB(&rsp_fields);
+
     // Set response fields
     if ((err = ble_gap_adv_rsp_set_fields(&rsp_fields)) != 0) return BLE_ERROR_RSP_FIELDS;
 
@@ -118,10 +132,34 @@ BLE_ErrorTypeDef gap_start_adv(BLE_HandleTypeDef *hble) {
 
     // Set advertising interval
     adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(hble->Config.AdvertisingIntervalMS);
-    adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(hble->Config.AdvertisingIntervalMS + 10);
+    adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(hble->Config.AdvertisingIntervalMS + 20);
 
     // Start advertising
-    if ((err = ble_gap_adv_start(hble->AddressType, NULL, BLE_HS_FOREVER, &adv_params, on_gap_event, NULL))) return BLE_ERROR_ADV_START;
+    if ((err = ble_gap_adv_start(hble->AddressType, NULL, BLE_HS_FOREVER, &adv_params, on_gap_event, hble))) return BLE_ERROR_ADV_START;
 
     return BLE_ERROR_OK;
+}
+
+BLE_ErrorTypeDef gap_start_adv(BLE_HandleTypeDef *hble) {
+    if (hble == NULL) return BLE_ERROR_MISSING_HANDLE;
+
+    uint8_t err = 0;
+
+    // Make sure valid address is set
+    if ((err = ble_hs_util_ensure_addr(hble->Config.PrivateAddressEnabled)) != 0) return BLE_ERROR_ADV_ADDR;
+
+    // Find the best address
+    if ((err = ble_hs_id_infer_auto(hble->Config.PrivateAddressEnabled, &hble->AddressType)) != 0) return BLE_ERROR_ADV_ADDR_CALC;
+
+    // Copy address to handle
+    if ((err = ble_hs_id_copy_addr(hble->AddressType, hble->Address, NULL)) != 0) return BLE_ERROR_ADV_ADDR_COPY;
+
+    // Format address into string
+    format_addr(hble->AddressStr, sizeof(hble->AddressStr) / sizeof(hble->AddressStr[0]), hble->Address);
+
+    return start_adv(hble);
+}
+
+void format_addr(char *AddrStr, uint8_t Len, uint8_t Address[]) {
+    snprintf(AddrStr, Len, "%02X:%02X:%02X:%02X:%02X:%02X:", Address[0], Address[1], Address[2], Address[3], Address[4], Address[5]);
 }

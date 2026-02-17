@@ -5,10 +5,12 @@
 #ifndef ESP32S3_BLE_BOARD_SPECIFIC_H
 #define ESP32S3_BLE_BOARD_SPECIFIC_H
 
-// typedef struct {
-//
-// };
-//
-// extern gLedState;
+#include <stdint.h>
+
+typedef struct {
+    uint16_t LedStateChrHandle;
+} BLE_BspChrsTypeDef;
+
+extern BLE_BspChrsTypeDef gBleBspChrs;
 
 #endif //ESP32S3_BLE_BOARD_SPECIFIC_H

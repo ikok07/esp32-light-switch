@@ -55,33 +55,44 @@ LOGGER_ErrorTypeDef LOGGER_ReInit() {
     return LOGGER_Init();
 }
 
-LOGGER_ErrorTypeDef LOGGER_Log(LOGGER_LevelTypeDef level, char *msg) {
+LOGGER_ErrorTypeDef LOGGER_Log(LOGGER_LevelTypeDef Level, char *Msg) {
     if (!hlogger.Initialized) return LOGGER_ERROR_UNINITIALIZED;
     if (!hlogger.Enabled) return LOGGER_ERROR_DISABLED;
 
-    if (hlogger.ActiveLevel > level) {
+    if (hlogger.ActiveLevel > Level) {
         // Logger's active level is higher than the provided one.
         return LOGGER_ERROR_OK;
     }
 
-    if (strlen(msg) > LOGGER_MSG_MAX_LEN) return LOGGER_ERROR_MESSAGE_LEN;
+    if (strlen(Msg) > LOGGER_MSG_MAX_LEN) return LOGGER_ERROR_MESSAGE_LEN;
 
     char formatted_msg[LOGGER_MSG_MAX_LEN];
     LOGGER_EventTypeDef event = {
-        .Level = level,
-        .msg = msg
+        .Level = Level,
+        .msg = Msg
     };
     if (LOGGER_FormatCB(&event, formatted_msg, sizeof(formatted_msg)) != 0) return LOGGER_ERROR_IMPLEMENTATION;
 
     event.msg = formatted_msg;
 
-    if (level == LOGGER_LEVEL_FATAL) {
+    if (Level == LOGGER_LEVEL_FATAL) {
         if (LOGGER_FatalCB(&event) != 0) return LOGGER_ERROR_IMPLEMENTATION;
     } else {
         if (LOGGER_LogCB(&event) != 0) return LOGGER_ERROR_IMPLEMENTATION;
     }
 
     return LOGGER_ERROR_OK;
+}
+
+LOGGER_ErrorTypeDef LOGGER_LogF(LOGGER_LevelTypeDef Level, char *Fmt, ...) {
+    char buffer[LOGGER_MSG_MAX_LEN];
+    va_list args;
+
+    va_start(args, Fmt);
+    vsnprintf(buffer, sizeof(buffer), Fmt, args);
+    va_end(args);
+
+    return LOGGER_Log(Level, buffer);
 }
 
 LOGGER_ErrorTypeDef LOGGER_Enable() {

@@ -2,14 +2,19 @@
 #include "ble.h"
 #include "bt.h"
 #include "led_strip.h"
-#include "driver/gptimer.h"
 
 #include "power.h"
-#include "timer.h"
 #include "led.h"
 #include "log.h"
 
+// TODO: Different tasks should subscribe to led color change event
+// TODO: Handle GAP unsubscribe event
+// TODO: Implement BLE bonding
+
 void app_main(void) {
+    // Initialize app state
+    APP_Init();
+
     // Configure logger
     LOGGER_Init();
     LOGGER_Enable();

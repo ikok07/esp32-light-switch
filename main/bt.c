@@ -3,11 +3,15 @@
 //
 
 #include "bt.h"
+
+#include "led.h"
 #include "app_state.h"
+#include "board_specific.h"
 #include "tasks_common.h"
 #include "log.h"
 
 void bt_config_task(void *arg);
+void led_notify_task(void *arg);
 
 void BT_Init() {
     SCHEDULER_TaskTypeDef config_task = {
@@ -22,6 +26,7 @@ void BT_Init() {
 }
 
 void bt_config_task(void *arg) {
+    BLE_ErrorTypeDef ble_err = BLE_ERROR_OK;
     gAppState.Tasks->BleTask = (SCHEDULER_TaskTypeDef){
         .CoreID = BLE_TASK_CORE_ID,
         .Name = "NimBLE Task",
@@ -30,34 +35,58 @@ void bt_config_task(void *arg) {
         .Args = NULL,
     };
 
+    gAppState.Tasks->LedNotifyTask = (SCHEDULER_TaskTypeDef){
+        .CoreID = LED_NOTIFY_TASK_CORE_ID,
+        .Name = "LED Notify Task",
+        .Priority = LED_NOTIFY_TASK_PRIORITY,
+        .StackDepth = LED_NOTIFY_TASK_STACK_DEPTH,
+        .Args = NULL,
+        .Function = led_notify_task
+    };
+
     *gAppState.hble = (BLE_HandleTypeDef){
         .BLE_Task = &gAppState.Tasks->BleTask,
         .Config = {
             .DeviceName = "LED Sensor",
             .GapAppearance = 0x02C0, // Sensor appearance
-            .AdvertisingIntervalMS = 500,
+            .AdvertisingIntervalMS = 50,
             .GapRole = BLE_GAP_ROLE_PERIPHERAL,
             .PrivateAddressEnabled = 0
         }
     };
 
     if (BLE_Init(gAppState.hble) != BLE_ERROR_OK) {
-        LOGGER_Log(LOGGER_LEVEL_FATAL, "Failed to initialize BLE!");
+        LOGGER_LogF(LOGGER_LEVEL_FATAL, "Failed to initialize BLE! Error code: %d", ble_err);
     };
 
     LOGGER_Log(LOGGER_LEVEL_INFO, "BLE initialized!");
 
-    while (!BLE_CanAdvertise()) {}
+    // Start LED Notify task
+    SCHEDULER_Create(&gAppState.Tasks->LedNotifyTask);
 
-    LOGGER_Log(LOGGER_LEVEL_INFO, "BLE can advertise!");
+    vTaskSuspend(NULL);
+}
 
-    if (BLE_StartAdvertising() != BLE_ERROR_OK) {
-        LOGGER_Log(LOGGER_LEVEL_ERROR, "Failed to start advertising!");
-        while (1);
-    };
+void led_notify_task(void *arg) {
+    while (1) {
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY)) {
+            if (gAppState.hble->hconn == BLE_HS_CONN_HANDLE_NONE || !gAppState.hble->NotificationsEnabled) continue;
 
-    LOGGER_Log(LOGGER_LEVEL_INFO, "BLE started advertising!");
+            char *active_light = LED_ActiveLightLabel(0);
+            struct os_mbuf *om = ble_hs_mbuf_from_flat(active_light, strlen(active_light) + 1);
+            if (om == NULL) {
+                LOGGER_Log(LOGGER_LEVEL_ERROR, "Failed to allocate mbuf for notification!");
+                continue;
+            }
 
+            uint8_t err = 0;
+
+            if ((err = ble_gatts_notify_custom(gAppState.hble->hconn, gBleBspChrs.LedStateChrHandle, om)) != 0) {
+                LOGGER_LogF(LOGGER_LEVEL_ERROR, "Failed to send notification! %d", err);
+                continue;
+            };
+        }
+    }
     vTaskSuspend(NULL);
 }
 

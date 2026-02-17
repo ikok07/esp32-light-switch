@@ -8,5 +8,7 @@
 #include "host/ble_gap.h"
 
 BLE_ErrorTypeDef gatt_init();
+void on_gatt_event(struct ble_gatt_register_ctxt *ctxt,
+                                  void *arg);
 
 #endif //ESP32S3_BLE_GATT_H

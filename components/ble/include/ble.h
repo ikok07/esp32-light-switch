@@ -35,17 +35,18 @@ typedef enum {
 } BLE_GapRoleTypeDef;
 
 typedef enum {
-    BLE_STATE_INACTIVE,
-    BLE_STATE_READY_FOR_ADV
-} BLE_StateTypeDef;
-
-typedef enum {
     BLE_GAP_EVENT_CONN_SUCCESS,                         // Passed argument - pointer to struct ble_gap_conn_desc
     BLE_GAP_EVENT_CONN_FAILED,
     BLE_GAP_EVENT_CONN_DISCONNECT,
     BLE_GAP_EVENT_CONN_UPD,                             // Passed argument - pointer to struct ble_gap_conn_desc
     BLE_GAP_EVENT_SUB
 } BLE_GapEventTypeDef;
+
+typedef enum {
+    BLE_GATT_EVENT_REG_SVC,                             // Register service
+    BLE_GATT_EVENT_REG_CHR,                             // Register characteristic
+    BLE_GATT_EVENT_REG_DSC,                             // Register descriptor
+} BLE_GattEventTypeDef;
 
 typedef struct {
     char *DeviceName;
@@ -58,7 +59,8 @@ typedef struct {
 typedef struct {
     SCHEDULER_TaskTypeDef *BLE_Task;
     BLE_ConfigTypeDef Config;
-    BLE_StateTypeDef State;
+    uint16_t hconn;
+    uint8_t NotificationsEnabled;
     uint8_t AddressType;
     uint8_t Address[6];
     char AddressStr[20];
@@ -68,10 +70,11 @@ extern struct ble_gatt_svc_def gGattServices[];
 
 BLE_ErrorTypeDef BLE_Init(BLE_HandleTypeDef *hble);
 
-uint8_t BLE_CanAdvertise();
-BLE_ErrorTypeDef BLE_StartAdvertising();
-
 void BLE_StackResetCB(int Reason);
+
 void BLE_GapEventCB(BLE_GapEventTypeDef Event, struct ble_gap_event *GapEvent, void *Arg);
+void BLE_GattEventCB(BLE_GattEventTypeDef Event, struct ble_gatt_register_ctxt *EventCtxt, void *Arg);
+void BLE_ErrorCB(BLE_ErrorTypeDef Error);
+void BLE_AdvertiseSvcsCB(struct ble_hs_adv_fields *Fields);
 
 #endif //ESP32S3_BLE_BLE_H

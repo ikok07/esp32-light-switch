@@ -47,7 +47,8 @@ void LOGGER_LogBasic();
 LOGGER_ErrorTypeDef LOGGER_Init();
 LOGGER_ErrorTypeDef LOGGER_DeInit();
 LOGGER_ErrorTypeDef LOGGER_ReInit();
-LOGGER_ErrorTypeDef LOGGER_Log(LOGGER_LevelTypeDef level, char *msg);
+LOGGER_ErrorTypeDef LOGGER_Log(LOGGER_LevelTypeDef Level, char *Msg);
+LOGGER_ErrorTypeDef LOGGER_LogF(LOGGER_LevelTypeDef Level, char *Fmt, ...);
 
 /* ------ Controls ------ */
 

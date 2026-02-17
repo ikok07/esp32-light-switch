@@ -10,7 +10,6 @@
 #include "task_scheduler.h"
 
 #include "host/ble_hs.h"
-#include "host/util/util.h"
 
 #include "nimble/nimble_port.h"
 #include "nimble/ble.h"
@@ -59,7 +58,7 @@ BLE_ErrorTypeDef BLE_Init(BLE_HandleTypeDef *hble) {
 
     ble_hs_cfg.reset_cb = BLE_StackResetCB;
     ble_hs_cfg.sync_cb = on_stack_sync_cb;
-
+    ble_hs_cfg.gatts_register_cb = on_gatt_event;
 
     // Initialize GAP
     if ((ble_err = gap_init(gHble)) != BLE_ERROR_OK) return ble_err;
@@ -75,56 +74,33 @@ BLE_ErrorTypeDef BLE_Init(BLE_HandleTypeDef *hble) {
 }
 
 /**
- * @brief Check whether the device can start advertising
- * @note This method MUST return true before calling  BLE_StartAdvertising()
- * @return 0 - The device is not ready to start advertising
- */
-uint8_t BLE_CanAdvertise() {
-    return !!gHble && gHble->State == BLE_STATE_READY_FOR_ADV;
-}
-
-/**
- * @brief Starts the GAP advertising
- */
-BLE_ErrorTypeDef BLE_StartAdvertising() {
-    if (gHble == NULL) return BLE_ERROR_MISSING_HANDLE;
-    if (gHble->State != BLE_STATE_READY_FOR_ADV) return BLE_ERROR_INVALID_STATE;
-
-    uint8_t err = 0;
-
-    // Make sure valid address is set
-    if ((err = ble_hs_util_ensure_addr(gHble->Config.PrivateAddressEnabled)) != 0) return BLE_ERROR_ADV_ADDR;
-
-    // Find the best address
-    if ((err = ble_hs_id_infer_auto(gHble->Config.PrivateAddressEnabled, &gHble->AddressType)) != 0) return BLE_ERROR_ADV_ADDR_CALC;
-
-    // Copy address to handle
-    if ((err = ble_hs_id_copy_addr(gHble->AddressType, gHble->Address, NULL)) != 0) return BLE_ERROR_ADV_ADDR_COPY;
-
-    // Format address into string
-    format_addr(gHble->AddressStr, sizeof(gHble->AddressStr) / sizeof(gHble->AddressStr[0]), gHble->Address);
-
-    return gap_start_adv(gHble);
-}
-
-/**
  * @brief This callback will be executed whenever the BLE stack gets reset by an error
  */
 __weak void BLE_StackResetCB(int Reason) {}
 
 /**
- * @brief This callback will be executed when there is new GAP event.
- * @param event GAP event
+ * @brief This callback will be executed when a GAP event occurs
  */
-// void BLE_GapEventCB(BLE_GapEventTypeDef Event, void *Arg) {}
+__weak void BLE_GapEventCB(BLE_GapEventTypeDef Event, struct ble_gap_event *GapEvent, void *Arg) {};
+
+/**
+ * @brief This callback will be executed when an error occurs while the driver is running
+ * @param Error BLE Error
+ */
+__weak void BLE_ErrorCB(BLE_ErrorTypeDef Error) {}
+
+/**
+ * @brief This callback will be executed when configuring GAP advertisement.
+ *        It is used to set the required service UUIDs in the advertised fields.
+ * @param Fields Advertisement fields
+ */
+__weak void BLE_AdvertiseSvcsCB(struct ble_hs_adv_fields *Fields) {}
 
 void on_stack_sync_cb(void) {
-    if (!gHble) return;
-    gHble->State = BLE_STATE_READY_FOR_ADV;
-}
-
-void format_addr(char *AddrStr, uint8_t Len, uint8_t Address[]) {
-    snprintf(AddrStr, Len, "%02X:%02X:%02X:%02X:%02X:%02X:", Address[0], Address[1], Address[2], Address[3], Address[4], Address[5]);
+    BLE_ErrorTypeDef err;
+    if ((err = gap_start_adv(gHble)) != BLE_ERROR_OK) {
+        BLE_ErrorCB(err);
+    }
 }
 
 void ble_task(void *arg) {

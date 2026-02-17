@@ -12,7 +12,7 @@
 #include "tasks_common.h"
 
 static led_strip_handle_t hled;
-static volatile uint8_t gColorIndex = 0;
+static volatile LED_ActiveLightTypeDef currentLight = LED_ACTIVE_RED;
 
 static void led_config_task(void *arg);
 static void led_task(void *arg);
@@ -90,14 +90,14 @@ void led_task(void *arg) {
             ESP_ERROR_CHECK(led_strip_set_pixel(
                 hled,
                 0,
-                gColorIndex == 0 ? value : 0,
-                gColorIndex == 1 ? value : 0,
-                gColorIndex == 2 ? value : 0
+                currentLight == LED_ACTIVE_RED ? value : 0,
+                currentLight == LED_ACTIVE_GREEN ? value : 0,
+                currentLight == LED_ACTIVE_BLUE ? value : 0
             ));
             ESP_ERROR_CHECK(led_strip_refresh(hled));
-
-            gColorIndex++;
-            if (gColorIndex > 2) gColorIndex = 0;
+            currentLight++;
+            if (currentLight == LED_ACTIVE_BLUE) currentLight = LED_ACTIVE_RED;
+            xTaskNotifyGive(gAppState.Tasks->LedNotifyTask.OsTask);
         }
     }
 }
@@ -105,4 +105,17 @@ void led_task(void *arg) {
 bool IRAM_ATTR tim_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {
     vTaskGenericNotifyGiveFromISR(gAppState.Tasks->LedTask.OsTask, 0, NULL);
     return pdFALSE;
+}
+
+char *LED_ActiveLightLabel(LED_ActiveLightTypeDef ActiveLight) {
+    switch (ActiveLight) {
+        case LED_ACTIVE_RED:
+            return "Red";
+        case LED_ACTIVE_GREEN:
+            return "Green";
+        case LED_ACTIVE_BLUE:
+            return "Blue";
+        default:
+            return "Unknown";
+    }
 }
