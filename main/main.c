@@ -4,8 +4,10 @@
 #include "led_strip.h"
 
 #include "power.h"
-#include "led.h"
 #include "log.h"
+#include "light-control.h"
+
+// Add brownout detection
 
 void app_main(void) {
     // Initialize app state
@@ -22,8 +24,8 @@ void app_main(void) {
         return;
     }
 
-    // Configure and start LED task
-    LED_Init();
+    // Configure relay control
+    LCTRL_Init();
 
     // Configure and start BLE task
     BT_Init();

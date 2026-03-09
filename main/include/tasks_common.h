@@ -7,17 +7,13 @@
 
 /* ------ CORE 0 ------ */
 
-#define LED_CFG_TASK_CORE_ID                0
-#define LED_CFG_TASK_STACK_DEPTH            2048
-#define LED_CFG_TASK_PRIORITY               5
+#define LIGHT_CONTROL_CFG_TASK_CORE_ID              0
+#define LIGHT_CONTROL_CFG_TASK_STACK_DEPTH          2048
+#define LIGHT_CONTROL_CFG_TASK_PRIORITY             5
 
-#define LED_TASK_CORE_ID                    0
-#define LED_TASK_STACK_DEPTH                1096
-#define LED_TASK_PRIORITY                   4
-
-#define LED_NOTIFY_TASK_CORE_ID             0
-#define LED_NOTIFY_TASK_STACK_DEPTH         4096
-#define LED_NOTIFY_TASK_PRIORITY            3
+#define LIGHT_CONTROL_TASK_CORE_ID                  0
+#define LIGHT_CONTROL_TASK_STACK_DEPTH              2048
+#define LIGHT_CONTROL_TASK_PRIORITY                 5
 
 /* ------ CORE 1 ------ */
 
