@@ -9,16 +9,20 @@
 #include "task_scheduler.h"
 #include "ble.h"
 #include "shared_values.h"
+#include "led_strip.h"
 
 typedef struct {
     SCHEDULER_TaskTypeDef BleTask;
     SCHEDULER_TaskTypeDef LightCtrlTask;
+    SCHEDULER_TaskTypeDef StatusLedTask;
 } APP_TasksTypeDef;
 
-typedef struct {} APP_SharedValuesTypeDef;
+typedef struct {
+    SHVAL_HandleTypeDef LightState;
+} APP_SharedValuesTypeDef;
 
 typedef struct {
-    TIMER_HandleTypeDef *htimled;
+    led_strip_handle_t *hstatusled;
     BLE_HandleTypeDef *hble;
     APP_TasksTypeDef *Tasks;
     APP_SharedValuesTypeDef *SharedValues;

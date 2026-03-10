@@ -5,11 +5,16 @@
 
 #include "power.h"
 #include "log.h"
-#include "light-control.h"
+#include "include/light_control.h"
+#include "include/status_led.h"
 
-// Add brownout detection
+// TODO: Add BLE notification sending task
+// TODO: Debounce button interrupt
+// TODO: Fix power issue
+// TODO: Implement sleep
 
 void app_main(void) {
+    esp_err_t esp_err;
     // Initialize app state
     APP_Init();
 
@@ -19,14 +24,19 @@ void app_main(void) {
     LOGGER_SetLevel(LOGGER_LEVEL_DEBUG);
 
     // Configure power
-    if (POWER_Config() != ESP_OK) {
-        LOGGER_Log(LOGGER_LEVEL_FATAL, "Failed to configure board power!");
+    if ((esp_err = POWER_Config())!= ESP_OK) {
+        LOGGER_LogF(LOGGER_LEVEL_FATAL, "Failed to configure board power! Error code: %d", esp_err);
         return;
     }
 
-    // Configure relay control
+    POWER_RunMax();
+
+    // Configure Status LED
+    STATUSLED_Init();
+
+    // Configure light control
     LCTRL_Init();
 
     // Configure and start BLE task
-    BT_Init();
+    // BT_Init();
 }

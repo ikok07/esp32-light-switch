@@ -7,6 +7,9 @@
 
 #include "ble.h"
 
+#define BT_MANUFACTURER_NAME                                    "Kaloyan Stefanov"
+#define BT_SERIAL                                               "LS001"
+
 void BT_Init();
 
 #endif //ESP32S3_BLE_BT_H

@@ -9,6 +9,8 @@
 #include "app_state.h"
 #include "tasks_common.h"
 #include "log.h"
+#include "power.h"
+#include "include/status_led.h"
 
 void bt_config_task(void *arg);
 void led_notify_task(void *arg);
@@ -28,6 +30,11 @@ void BT_Init() {
 }
 
 void bt_config_task(void *arg) {
+    // Wait for light control to initialize
+    while (!gAppState.Tasks->LightCtrlTask.Active) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
     BLE_ErrorTypeDef ble_err = BLE_ERROR_OK;
     gAppState.Tasks->BleTask = (SCHEDULER_TaskTypeDef){
         .Active = 0,
@@ -41,11 +48,11 @@ void bt_config_task(void *arg) {
     *gAppState.hble = (BLE_HandleTypeDef){
         .BLE_Task = &gAppState.Tasks->BleTask,
         .Config = {
-            .DeviceName = "LED Sensor",
-            .GapAppearance = 0x02C0, // Sensor appearance
+            .DeviceName = "Light switch",
+            .GapAppearance = 0x04C1,            // Switch appearance
             .AdvertisingIntervalMS = 50,
             .GapRole = BLE_GAP_ROLE_PERIPHERAL,
-            .PrivateAddressEnabled = 0,
+            .PrivateAddressEnabled = 1,
             .MaxConnections = 1,
             .Security = {
                 .EncryptedConnection = 1,
@@ -53,14 +60,16 @@ void bt_config_task(void *arg) {
                 .ProtectionType = BLE_PROTECTION_PASSKEY
             },
             .ManufacturerData = {
-                .ManufacturerName = "LED Industries LTD.",
-                .SerialNumber = "LS001"
+                .ManufacturerName = BT_MANUFACTURER_NAME,
+                .SerialNumber = BT_SERIAL
             }
         }
     };
 
     if ((ble_err = BLE_Init(gAppState.hble)) != BLE_ERROR_OK) {
         LOGGER_LogF(LOGGER_LEVEL_FATAL, "Failed to initialize BLE! Error code: %d", ble_err);
+        STATUSLED_SetState(STATUSLED_STATE_ERROR_BT);
+        POWER_WaitAndRestart(3000);
     } else {
         LOGGER_Log(LOGGER_LEVEL_INFO, "BLE initialized!");
     };

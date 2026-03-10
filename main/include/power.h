@@ -16,4 +16,6 @@ esp_err_t POWER_RunMax();
 esp_err_t POWER_DisableLightSleep();
 esp_err_t POWER_RunNormal();
 
+void POWER_WaitAndRestart(uint32_t DelayMs);
+
 #endif //ESP32S3_POWER_H

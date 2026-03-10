@@ -4,6 +4,9 @@
 
 #include "power.h"
 
+#include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+
 static esp_pm_lock_handle_t gHlock;
 
 /**
@@ -13,7 +16,7 @@ esp_err_t POWER_Config() {
     esp_pm_config_t POWER_Config = {
         .max_freq_mhz = CPU_MAX_MHZ,
         .min_freq_mhz = CPU_MIN_MHZ,
-        .light_sleep_enable = true
+        .light_sleep_enable = pdTRUE                // Tickless Idle must be enabled in menuconfig
     };
     return esp_pm_configure(&POWER_Config);
 }
@@ -49,4 +52,12 @@ esp_err_t POWER_RunNormal() {
         return err;
     }
     return esp_pm_lock_delete(gHlock);
+}
+
+/**
+ * @brief Waits some time and restarts the MCU
+ */
+void POWER_WaitAndRestart(uint32_t DelayMs) {
+    vTaskDelay(pdMS_TO_TICKS(DelayMs));
+    esp_restart();
 }
