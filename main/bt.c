@@ -4,6 +4,7 @@
 
 #include "bt.h"
 
+#include <ble_config.h>
 #include <sys/types.h>
 
 #include "app_state.h"
@@ -66,12 +67,16 @@ void bt_config_task(void *arg) {
         }
     };
 
+    // Configure platform specific options
+    BT_Configure(gAppState.hble);
+
     if ((ble_err = BLE_Init(gAppState.hble)) != BLE_ERROR_OK) {
         LOGGER_LogF(LOGGER_LEVEL_FATAL, "Failed to initialize BLE! Error code: %d", ble_err);
-        STATUSLED_SetState(STATUSLED_STATE_ERROR_BT);
+        STATUSLED_SetState(STATUSLED_STATE_ERROR_BT_CFG);
         POWER_WaitAndRestart(3000);
     } else {
         LOGGER_Log(LOGGER_LEVEL_INFO, "BLE initialized!");
+        STATUSLED_SetState(STATUSLED_STATE_READY_TO_CONNECT);
     };
 
     // Remove the config task

@@ -62,12 +62,15 @@ void status_led_task(void *arg) {
     esp_err_t esp_err;
     uint8_t red, green, blue;
     STATUSLED_StateTypeDef state;
+
+    LOGGER_Log(LOGGER_LEVEL_INFO, "Status LED Task started");
+
     while (1) {
         // Wait for status update
         xQueueReceive(gStateQueue, &state, portMAX_DELAY);
         get_color_for_state(state, &red, &green, &blue);
 
-        if ((esp_err = led_strip_set_pixel(*gAppState.hstatusled, 0, red, green, blue)) != ESP_OK) {
+        if ((esp_err = led_strip_set_pixel(*gAppState.hstatusled, 0, (red * STATUS_LED_BRIGHTNESS) / 100, (green * STATUS_LED_BRIGHTNESS) / 100, (blue * STATUS_LED_BRIGHTNESS) / 100)) != ESP_OK) {
             LOGGER_LogF(LOGGER_LEVEL_ERROR, "Failed to set LED color! Error code: %d", esp_err);
             continue;
         };
@@ -75,6 +78,8 @@ void status_led_task(void *arg) {
         if ((esp_err = led_strip_refresh(*gAppState.hstatusled)) != ESP_OK) {
             LOGGER_LogF(LOGGER_LEVEL_ERROR, "Failed to refresh LED! Error code: %d", esp_err);
         };
+
+        LOGGER_LogF(LOGGER_LEVEL_INFO, "Status LED set to R: %d G: %d B: %d", red, green, blue);
     }
 }
 
@@ -86,17 +91,21 @@ void get_color_for_state(STATUSLED_StateTypeDef State, uint8_t *Red, uint8_t *Gr
             *Green = 159;
             *Blue = 1;
             break;
-        case STATUSLED_STATE_ERROR_HW:
+        case STATUSLED_STATE_ERROR_HW_CFG:
             *Red = 255;
             *Green = 0;
             *Blue = 0;
             break;
-        case STATUSLED_STATE_ERROR_BT:
+        case STATUSLED_STATE_ERROR_BT_CFG:
             *Red = 97;
             *Green = 120;
             *Blue = 255;
             break;
-        case STATUSLED_STATE_OPERATIONAL:
+        case STATUSLED_STATE_READY_TO_CONNECT:
+            *Red = 255;
+            *Green = 255;
+            *Blue = 255;
+        case STATUSLED_STATE_CONNECTED:
             *Red = 0;
             *Green = 255;
             *Blue = 0;

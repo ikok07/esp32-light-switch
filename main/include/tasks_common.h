@@ -20,7 +20,7 @@
 #define STATUS_LED_CFG_TASK_PRIORITY                4
 
 #define STATUS_LED_TASK_CORE_ID                     0
-#define STATUS_LED_TASK_STACK_DEPTH                 2048
+#define STATUS_LED_TASK_STACK_DEPTH                 4096
 #define STATUS_LED_TASK_PRIORITY                    4
 
 /* ------ CORE 1 ------ */

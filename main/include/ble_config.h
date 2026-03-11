@@ -5,7 +5,7 @@
 #ifndef ESP32S3_BLE_BLE_CONFIG_H
 #define ESP32S3_BLE_BLE_CONFIG_H
 
-#include <stdint.h>
+#include "ble.h"
 
 typedef struct {
     uint16_t LightStateChrHandle;
@@ -13,5 +13,6 @@ typedef struct {
 
 extern BLE_BspChrsTypeDef gBleBspChrs;
 
+void BT_Configure(BLE_HandleTypeDef *hble);
 
 #endif //ESP32S3_BLE_BLE_CONFIG_H

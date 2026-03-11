@@ -10,8 +10,6 @@
 
 // TODO: Add BLE notification sending task
 // TODO: Debounce button interrupt
-// TODO: Fix power issue
-// TODO: Implement sleep
 
 void app_main(void) {
     esp_err_t esp_err;
@@ -28,15 +26,31 @@ void app_main(void) {
         LOGGER_LogF(LOGGER_LEVEL_FATAL, "Failed to configure board power! Error code: %d", esp_err);
         return;
     }
-
-    POWER_RunMax();
+    POWER_FreqControl(pdTRUE);
+    // Disable MCU sleep during configuration
+    POWER_LightSleepControl(pdFALSE);
 
     // Configure Status LED
     STATUSLED_Init();
+
+    // Set configuring LED state
+    STATUSLED_SetState(STATUSLED_STATE_CONFIGURING);
 
     // Configure light control
     LCTRL_Init();
 
     // Configure and start BLE task
-    // BT_Init();
+    BT_Init();
+
+    // Wait for all tasks to start
+    while (
+        !gAppState.Tasks->StatusLedTask.Active ||
+        !gAppState.Tasks->LightCtrlTask.Active ||
+        !gAppState.Tasks->BleTask.Active
+    ) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    // Allow MCU to sleep
+    POWER_LightSleepControl(pdTRUE);
 }

@@ -12,9 +12,8 @@
 
 esp_err_t POWER_Config();
 
-esp_err_t POWER_RunMax();
-esp_err_t POWER_DisableLightSleep();
-esp_err_t POWER_RunNormal();
+esp_err_t POWER_FreqControl(uint8_t MaxFreqEnabled);
+esp_err_t POWER_LightSleepControl(uint8_t Enabled);
 
 void POWER_WaitAndRestart(uint32_t DelayMs);
 

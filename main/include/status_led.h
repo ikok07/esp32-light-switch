@@ -9,12 +9,14 @@
 #include "soc/gpio_num.h"
 
 #define STATUS_LED_GPIO                             (GPIO_NUM_48)
+#define STATUS_LED_BRIGHTNESS                       (10)                   // 0 - 100
 
 typedef enum {
     STATUSLED_STATE_CONFIGURING,
-    STATUSLED_STATE_ERROR_HW,
-    STATUSLED_STATE_ERROR_BT,
-    STATUSLED_STATE_OPERATIONAL
+    STATUSLED_STATE_ERROR_HW_CFG,
+    STATUSLED_STATE_ERROR_BT_CFG,
+    STATUSLED_STATE_READY_TO_CONNECT,
+    STATUSLED_STATE_CONNECTED
 } STATUSLED_StateTypeDef;
 
 void STATUSLED_Init();
