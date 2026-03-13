@@ -8,9 +8,6 @@
 #include "include/light_control.h"
 #include "include/status_led.h"
 
-// TODO: Add BLE notification sending task
-// TODO: Debounce button interrupt
-
 void app_main(void) {
     esp_err_t esp_err;
     // Initialize app state

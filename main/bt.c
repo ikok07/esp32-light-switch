@@ -14,7 +14,7 @@
 #include "include/status_led.h"
 
 void bt_config_task(void *arg);
-void led_notify_task(void *arg);
+void light_state_notify_task(void *arg);
 
 static SCHEDULER_TaskTypeDef gConfigTask = {
     .Active = 0,
@@ -46,6 +46,16 @@ void bt_config_task(void *arg) {
         .Args = NULL,
     };
 
+    gAppState.Tasks->BleLightStateNotificationsTask = (SCHEDULER_TaskTypeDef){
+        .Active = 0,
+        .CoreID = BLE_LIGHT_STATE_N_TASK_CORE_ID,
+        .Name = "BLE Light state notification",
+        .Priority = BLE_LIGHT_STATE_N_TASK_PRIORITY,
+        .StackDepth = BLE_LIGHT_STATE_N_TASK_STACK_DEPTH,
+        .Args = NULL,
+        .Function = light_state_notify_task
+    };
+
     *gAppState.hble = (BLE_HandleTypeDef){
         .BLE_Task = &gAppState.Tasks->BleTask,
         .Config = {
@@ -53,7 +63,8 @@ void bt_config_task(void *arg) {
             .GapAppearance = 0x04C1,            // Switch appearance
             .AdvertisingIntervalMS = 50,
             .GapRole = BLE_GAP_ROLE_PERIPHERAL,
-            .PrivateAddressEnabled = 1,
+            .PrivateAddressEnabled = 0,
+            .NonResolvablePrivateAddress = 0,
             .MaxConnections = 1,
             .Security = {
                 .EncryptedConnection = 1,
@@ -67,7 +78,7 @@ void bt_config_task(void *arg) {
         }
     };
 
-    // Configure platform specific options
+    // Configure platform-specific options
     BT_Configure(gAppState.hble);
 
     if ((ble_err = BLE_Init(gAppState.hble)) != BLE_ERROR_OK) {
@@ -79,6 +90,33 @@ void bt_config_task(void *arg) {
         STATUSLED_SetState(STATUSLED_STATE_READY_TO_CONNECT);
     };
 
+    // Start light state notifications task
+    SCHEDULER_Create(&gAppState.Tasks->BleLightStateNotificationsTask);
+
     // Remove the config task
     SCHEDULER_Remove(&gConfigTask);
+}
+
+void light_state_notify_task(void *arg) {
+    while (1) {
+        if (xTaskNotifyWait(0, 0xFF, NULL, portMAX_DELAY)) {
+
+            // Clear pending notifications
+            xTaskNotifyStateClear(NULL);
+
+            uint32_t light_state;
+            SHVAL_ErrorTypeDef shval_err;
+            if ((shval_err = SHVAL_GetValue(&gAppState.SharedValues->LightState, &light_state, 1000)) != SHVAL_ERROR_OK) {
+                LOGGER_LogF(LOGGER_LEVEL_ERROR, "Failed to get shared light state value! Error code: %d", shval_err);
+                continue;
+            }
+
+            BLE_ErrorTypeDef ble_err = BLE_ERROR_OK;
+            uint8_t conn_count = sizeof(gAppState.hble->Connections) / sizeof(gAppState.hble->Connections[0]);
+            if ((ble_err = BLE_SendNotification(gAppState.hble->Connections, conn_count, gBleAttributes.LightStateChrHandle, &light_state, 1, pdTRUE)) != BLE_ERROR_OK) {
+                LOGGER_LogF(LOGGER_LEVEL_INFO, "Failed to send BLE notification! Error code: %d", ble_err);
+                continue;
+            }
+        }
+    }
 }

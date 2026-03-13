@@ -17,7 +17,7 @@ esp_err_t POWER_Config() {
     esp_pm_config_t POWER_Config = {
         .max_freq_mhz = CPU_MAX_MHZ,
         .min_freq_mhz = CPU_MIN_MHZ,
-        .light_sleep_enable = pdFALSE                // Tickless Idle must be enabled in menuconfig
+        .light_sleep_enable = pdTRUE                // Tickless Idle must be enabled in menuconfig
     };
     return esp_pm_configure(&POWER_Config);
 }

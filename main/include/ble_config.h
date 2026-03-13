@@ -9,9 +9,9 @@
 
 typedef struct {
     uint16_t LightStateChrHandle;
-} BLE_BspChrsTypeDef;
+} BLE_AttributesTypeDef;
 
-extern BLE_BspChrsTypeDef gBleBspChrs;
+extern BLE_AttributesTypeDef gBleAttributes;
 
 void BT_Configure(BLE_HandleTypeDef *hble);
 

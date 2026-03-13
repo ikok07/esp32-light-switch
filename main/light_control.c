@@ -85,7 +85,7 @@ void light_ctrl_task(void *arg) {
         uint32_t enable;
         if (xTaskNotifyWait(0, 0xFF, &enable, portMAX_DELAY)) {
             // Debounce time
-            vTaskDelay(pdMS_TO_TICKS(50));
+            vTaskDelay(pdMS_TO_TICKS(150));
 
             // Clear pending notifications
             xTaskNotifyStateClear(NULL);
@@ -117,6 +117,9 @@ void light_ctrl_task(void *arg) {
             LOGGER_Log(LOGGER_LEVEL_INFO, level == 1 ? "Light enabled" : "Light disabled");
 
             gpio_isr_handler_add(LIGHT_TOGGLE_GPIO, light_toggle_isr, NULL);
+
+            // Notify BLE devices
+            xTaskNotifyGive(gAppState.Tasks->BleLightStateNotificationsTask.OsTask);
         }
     }
 }

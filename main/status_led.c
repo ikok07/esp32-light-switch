@@ -10,7 +10,6 @@
 #include "led_strip.h"
 #include "log.h"
 
-static void status_led_config_task(void *arg);
 static void status_led_task(void *arg);
 
 void get_color_for_state(STATUSLED_StateTypeDef State, uint8_t *Red, uint8_t *Green, uint8_t *Blue);
@@ -105,6 +104,7 @@ void get_color_for_state(STATUSLED_StateTypeDef State, uint8_t *Red, uint8_t *Gr
             *Red = 255;
             *Green = 255;
             *Blue = 255;
+            break;
         case STATUSLED_STATE_CONNECTED:
             *Red = 0;
             *Green = 255;

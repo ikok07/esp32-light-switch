@@ -2,6 +2,7 @@
 // Created by Kok on 3/10/26.
 //
 
+#include <status_led.h>
 #include <string.h>
 
 #include "ble_config.h"
@@ -9,7 +10,7 @@
 #include "log.h"
 #include "app_state.h"
 
-#define BLE_DEVICE_PASSWORD                                          123456
+#define BLE_DEVICE_PASSWORD                                          246300
 
 static const ble_uuid16_t automation_service_uuid = BLE_UUID16_INIT(0x1815);
 
@@ -27,7 +28,7 @@ static const ble_uuid16_t num_digitals_dsc_uuid = BLE_UUID16_INIT(0x2909);
                                                                     }\
 
 
-BLE_BspChrsTypeDef gBleBspChrs;
+BLE_AttributesTypeDef gBleAttributes;
 
 /* ------ Driver CBs ------ */
 
@@ -59,7 +60,7 @@ static struct ble_gatt_svc_def gGattServices[] = {
                 {
                     .uuid = &digital_chr_uuid.u,
                     .flags = BLE_GATT_CHR_F_READ  | BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_ENC | BLE_GATT_CHR_F_NOTIFY,
-                    .val_handle = &gBleBspChrs.LightStateChrHandle,
+                    .val_handle = &gBleAttributes.LightStateChrHandle,
                     .access_cb = light_state_access_cb,
                     .descriptors = (struct ble_gatt_dsc_def[]){
                         {
@@ -98,6 +99,7 @@ void on_gap_event(BLE_GapEventTypeDef Event, struct ble_gap_event *GapEvent, voi
     switch (Event) {
         case BLE_GAP_EVENT_CONN_SUCCESS:
             LOGGER_LogF(LOGGER_LEVEL_INFO, "BLE Device %d connected!", GapEvent->connect.conn_handle);
+            STATUSLED_SetState(STATUSLED_STATE_CONNECTED);
             break;
         case BLE_GAP_EVENT_CONN_FAILED:
             LOGGER_Log(LOGGER_LEVEL_INFO, "BLE Device connection failed!");
@@ -110,6 +112,7 @@ void on_gap_event(BLE_GapEventTypeDef Event, struct ble_gap_event *GapEvent, voi
             break;
         case BLE_GAP_EVENT_CONN_DISCONNECT:
             LOGGER_LogF(LOGGER_LEVEL_INFO, "BLE Device %d disconnected!", GapEvent->disconnect.conn.conn_handle);
+            if (!BLE_CheckConnectionsAvailable(gAppState.hble)) STATUSLED_SetState(STATUSLED_STATE_READY_TO_CONNECT);
             break;
         case BLE_GAP_EVENT_SUB:
             LOGGER_LogF(LOGGER_LEVEL_INFO, "BLE Device %d subscribed!", GapEvent->subscribe.conn_handle);
@@ -154,7 +157,7 @@ void on_gatt_reg_event(BLE_GattRegisterEventTypeDef Event, struct ble_gatt_regis
 }
 
 uint8_t on_gatt_subscribe_event(struct ble_gap_event *event) {
-    if (event->subscribe.attr_handle == gBleBspChrs.LightStateChrHandle) {
+    if (event->subscribe.attr_handle == gBleAttributes.LightStateChrHandle) {
         uint8_t is_encrypted;
         if (BLE_CheckConnEncrypted(event->subscribe.conn_handle, &is_encrypted) != BLE_ERROR_OK || !is_encrypted) {
             return BLE_ATT_ERR_INSUFFICIENT_AUTHEN;
@@ -189,18 +192,13 @@ int light_state_access_cb(uint16_t conn_handle, uint16_t attr_handle,
             err = os_mbuf_append(ctxt->om, &light_state, 1);
 
             return err == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
-            break;
         case BLE_GATT_ACCESS_OP_WRITE_CHR:
             if (ctxt->om->om_len != 1) return BLE_ATT_ERR_VALUE_NOT_ALLOWED;
             uint8_t write_val = *ctxt->om->om_data;
             if (write_val > 1) return BLE_ATT_ERR_VALUE_NOT_ALLOWED;
 
-            if ((shval_err = SHVAL_SetValue(&gAppState.SharedValues->LightState, write_val, 1000)) != SHVAL_ERROR_OK) {
-                LOGGER_LogF(LOGGER_LEVEL_ERROR, "Failed to set shared light state variable! Error code: %d", shval_err);
-                return BLE_ATT_ERR_UNLIKELY;
-            }
+            xTaskNotify(gAppState.Tasks->LightCtrlTask.OsTask, write_val, eSetValueWithOverwrite);
             return 0;
-            break;
         default:
             break;
     }

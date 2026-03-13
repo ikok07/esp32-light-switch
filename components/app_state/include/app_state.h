@@ -14,6 +14,7 @@
 typedef struct {
     SCHEDULER_TaskTypeDef BleTask;
     SCHEDULER_TaskTypeDef LightCtrlTask;
+    SCHEDULER_TaskTypeDef BleLightStateNotificationsTask;
     SCHEDULER_TaskTypeDef StatusLedTask;
 } APP_TasksTypeDef;
 
