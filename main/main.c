@@ -1,12 +1,13 @@
 #include "app_state.h"
-#include "ble.h"
-#include "bt.h"
-#include "led_strip.h"
-
 #include "power.h"
 #include "log.h"
-#include "include/light_control.h"
-#include "include/status_led.h"
+#include "ble.h"
+#include "led_strip.h"
+
+#include "bt.h"
+#include "log-config.h"
+#include "light_control.h"
+#include "status_led.h"
 
 void app_main(void) {
     esp_err_t esp_err;
@@ -14,9 +15,7 @@ void app_main(void) {
     APP_Init();
 
     // Configure logger
-    LOGGER_Init();
-    LOGGER_Enable();
-    LOGGER_SetLevel(LOGGER_LEVEL_DEBUG);
+    LOG_Configure();
 
     // Configure power
     if ((esp_err = POWER_Config())!= ESP_OK) {
@@ -24,6 +23,7 @@ void app_main(void) {
         return;
     }
     POWER_FreqControl(pdTRUE);
+
     // Disable MCU sleep during configuration
     POWER_LightSleepControl(pdFALSE);
 
