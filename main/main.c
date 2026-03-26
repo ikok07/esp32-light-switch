@@ -11,6 +11,7 @@
 
 void app_main(void) {
     esp_err_t esp_err;
+
     // Initialize app state
     APP_Init();
 

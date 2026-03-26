@@ -16,6 +16,12 @@
 void bt_config_task(void *arg);
 void light_state_notify_task(void *arg);
 
+static uint8_t gManufacturerData[4] = {
+    0x62, 0x48,                                  // Manufacturer ID (Defined in Home Assistant integration)
+    BT_DEVICE_TYPE,                              // Device type - generic switch (Defined in Home Assistant integration),
+    0x00                                         // Device does not require pairing
+};
+
 static SCHEDULER_TaskTypeDef gConfigTask = {
     .Active = 0,
     .CoreID = BT_CFG_TASK_CORE_ID,
@@ -59,22 +65,26 @@ void bt_config_task(void *arg) {
     *gAppState.hble = (BLE_HandleTypeDef){
         .BLE_Task = &gAppState.Tasks->BleTask,
         .Config = {
-            .DeviceName = "Light switch",
+            .DeviceName = "LSwitch",
             .GapAppearance = 0x04C1,            // Switch appearance
             .AdvertisingIntervalMS = 50,
             .GapRole = BLE_GAP_ROLE_PERIPHERAL,
             .PrivateAddressEnabled = 0,
             .NonResolvablePrivateAddress = 0,
             .MaxConnections = 1,
+            .DiscoverabilityMode = BLE_DISC_MODE_ALLOW_ALL,
+            .ConnectionMode = BLE_CONN_MODE_ALLOW_ALL,
             .Security = {
-                .EncryptedConnection = 1,
-                .IOCapability = BLE_IOCAP_DISP_ONLY,
-                .ProtectionType = BLE_PROTECTION_PASSKEY
+                .EncryptedConnection = 0,
+                .IOCapability = BLE_IOCAP_NO_INP_OUT,
+                .ProtectionType = BLE_PROTECTION_JUST_WORKS
             },
             .ManufacturerData = {
                 .ManufacturerName = BT_MANUFACTURER_NAME,
                 .SerialNumber = BT_SERIAL
-            }
+            },
+            .AdvMfgData = gManufacturerData,
+            .AdvMfgDataLen = sizeof(gManufacturerData) / sizeof(gManufacturerData[0]),
         }
     };
 
@@ -113,7 +123,7 @@ void light_state_notify_task(void *arg) {
 
             BLE_ErrorTypeDef ble_err = BLE_ERROR_OK;
             uint8_t conn_count = sizeof(gAppState.hble->Connections) / sizeof(gAppState.hble->Connections[0]);
-            if ((ble_err = BLE_SendNotification(gAppState.hble->Connections, conn_count, gBleAttributes.LightStateChrHandle, &light_state, 1, pdTRUE)) != BLE_ERROR_OK) {
+            if ((ble_err = BLE_SendNotification(gAppState.hble->Connections, conn_count, gBleAttributes.LightStateChrHandle, &light_state, 1, gAppState.hble->Config.Security.EncryptedConnection)) != BLE_ERROR_OK) {
                 LOGGER_LogF(LOGGER_LEVEL_INFO, "Failed to send BLE notification! Error code: %d", ble_err);
                 continue;
             }

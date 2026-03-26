@@ -9,6 +9,7 @@
 
 #define BT_MANUFACTURER_NAME                                    "Kaloyan Stefanov"
 #define BT_SERIAL                                               "LS001"
+#define BT_DEVICE_TYPE                                          0x50
 
 void BT_Init();
 

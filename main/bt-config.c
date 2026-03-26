@@ -10,7 +10,12 @@
 #include "log.h"
 #include "app_state.h"
 
-#define BLE_DEVICE_PASSWORD                                          246300
+#define BLE_DEVICE_PASSWORD                                             246300
+
+static const ble_uuid128_t identifier_service_uuid = BLE_UUID128_INIT(
+    0x88, 0xc8, 0x5b, 0xc1, 0xfe, 0xec, 0x4c, 0x35,
+    0xaa, 0x49, 0x74, 0xae, 0x36, 0x35, 0x51, 0x65
+);
 
 static const ble_uuid16_t automation_service_uuid = BLE_UUID16_INIT(0x1815);
 
@@ -22,13 +27,14 @@ static const ble_uuid16_t num_digitals_dsc_uuid = BLE_UUID16_INIT(0x2909);
 
 #define BLE_DSC_OBJ_DESCRIPTION(AccessCB, Description)             {\
                                                                         .uuid = &description_dsc_uuid.u,\
-                                                                        .att_flags = BLE_ATT_F_READ | BLE_ATT_F_READ_ENC,\
+                                                                        .att_flags = BLE_ATT_F_READ,\
                                                                         .access_cb = AccessCB,\
                                                                         .arg = Description\
                                                                     }\
 
 
 BLE_AttributesTypeDef gBleAttributes;
+ble_uuid128_t gAdvertised128Services[] = {identifier_service_uuid};
 
 /* ------ Driver CBs ------ */
 
@@ -36,7 +42,7 @@ void on_gap_event(BLE_GapEventTypeDef Event, struct ble_gap_event *GapEvent, voi
 void on_gatt_reg_event(BLE_GattRegisterEventTypeDef Event, struct ble_gatt_register_ctxt *EventCtxt, void *Arg);
 uint8_t on_gatt_subscribe_event(struct ble_gap_event *event);
 void on_error(BLE_ErrorTypeDef Error);
-void on_advertise_services(struct ble_hs_adv_fields *Fields);
+void on_advertise(struct ble_hs_adv_fields *Fields);
 
 /* ------ Services Access CBs ------ */
 
@@ -54,23 +60,28 @@ int description_dsc_access_cb(uint16_t conn_handle, uint16_t attr_handle,
 
 static struct ble_gatt_svc_def gGattServices[] = {
     {
+        // Used for identification of Home Assistant integration
+        .type = BLE_GATT_SVC_TYPE_PRIMARY,
+        .uuid = &identifier_service_uuid.u
+    },
+    {
         .type = BLE_GATT_SVC_TYPE_PRIMARY,
         .uuid = &automation_service_uuid.u,
         .characteristics = (struct ble_gatt_chr_def[]) {
                 {
                     .uuid = &digital_chr_uuid.u,
-                    .flags = BLE_GATT_CHR_F_READ  | BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_ENC | BLE_GATT_CHR_F_NOTIFY,
+                    .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_NOTIFY,
                     .val_handle = &gBleAttributes.LightStateChrHandle,
                     .access_cb = light_state_access_cb,
                     .descriptors = (struct ble_gatt_dsc_def[]){
                         {
                             .uuid = &presentation_dsc_uuid.u,
-                            .att_flags = BLE_ATT_F_READ | BLE_ATT_F_READ_ENC,
+                            .att_flags = BLE_ATT_F_READ,
                             .access_cb = light_state_char_presentation_dsc_access_cb
                         },
                         {
                             .uuid = &num_digitals_dsc_uuid.u,
-                            .att_flags = BLE_ATT_F_READ | BLE_ATT_F_READ_ENC,
+                            .att_flags = BLE_ATT_F_READ,
                             .access_cb = num_digitals_dsc_access_cb
                         },
                             BLE_DSC_OBJ_DESCRIPTION(description_dsc_access_cb, "Light state"),
@@ -88,7 +99,7 @@ void BT_Configure(BLE_HandleTypeDef *hble) {
         .on_gap_event = on_gap_event,
         .on_gatt_reg_event = on_gatt_reg_event,
         .on_gatt_subscribe_event = on_gatt_subscribe_event,
-        .on_advertise_services = on_advertise_services,
+        .on_advertise = on_advertise,
         .on_error = on_error
     };
 
@@ -170,10 +181,10 @@ void on_error(BLE_ErrorTypeDef Error) {
     LOGGER_LogF(LOGGER_LEVEL_ERROR, "An error occurred in BLE driver! Error code: %d", Error);
 }
 
-void on_advertise_services(struct ble_hs_adv_fields *Fields) {
-    Fields->uuids16 = (ble_uuid16_t[]){automation_service_uuid};
-    Fields->num_uuids16 = 1;
-    Fields->uuids16_is_complete = 1;
+void on_advertise(struct ble_hs_adv_fields *Fields) {
+    Fields->uuids128 = gAdvertised128Services;
+    Fields->num_uuids128 = 1;
+    Fields->uuids128_is_complete = 1;
 }
 
 int light_state_access_cb(uint16_t conn_handle, uint16_t attr_handle,
