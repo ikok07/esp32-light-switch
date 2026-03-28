@@ -4,14 +4,14 @@
 
 #include "bt.h"
 
-#include <ble_config.h>
 #include <sys/types.h>
 
 #include "app_state.h"
 #include "tasks_common.h"
 #include "log.h"
 #include "power.h"
-#include "include/status_led.h"
+#include "bt-config.h"
+#include "status_led.h"
 
 void bt_config_task(void *arg);
 void light_state_notify_task(void *arg);

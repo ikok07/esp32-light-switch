@@ -5,7 +5,7 @@
 #include <status_led.h>
 #include <string.h>
 
-#include "ble_config.h"
+#include "bt-config.h"
 #include "ble.h"
 #include "log.h"
 #include "app_state.h"

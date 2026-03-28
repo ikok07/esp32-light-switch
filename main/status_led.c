@@ -2,7 +2,7 @@
 // Created by Kok on 3/10/26.
 //
 
-#include "include/status_led.h"
+#include "status_led.h"
 
 #include "app_state.h"
 #include "task_scheduler.h"
@@ -24,7 +24,7 @@ void STATUSLED_Init() {
         .max_leds = 1
     };
     led_strip_rmt_config_t rmt_config = {
-        .clk_src = RMT_BASECLK_DEFAULT,
+        .clk_src = RMT_CLK_SRC_DEFAULT,
         .resolution_hz = 1000 * 1000 * 10           // 10 MHz
     };
 
