@@ -19,7 +19,7 @@ A BLE-enabled smart light switch built on the **ESP32**, developed as part of a 
 
 The PCB design files are located in the [`pcb/`](pcb/) directory (KiCad project). Key datasheets and reference material can be found in [`docs/`](docs/).
 
-![PCB 3D-model](https://github.com/ikok07/esp32-light-switch/pcb/3d_model.png?raw=true)
+![PCB 3D-model](https://github.com/ikok07/esp32-light-switch/blob/main/pcb/3d_model.png?raw=true)
 
 | Component         | Purpose             |
 |-------------------|---------------------|
