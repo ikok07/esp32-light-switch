@@ -1,6 +1,6 @@
 # ESP32 Light Switch
 
-A BLE-enabled smart light switch built on the **ESP32**, developed as part of a custom hardware product lineup. The firmware is written in C using the **ESP-IDF** framework and integrates natively with **Home Assistant** via a dedicated [BLE HAOS integration](https://github.com/ikok07/kok-products-ble-haos-integration).
+A BLE-enabled smart light switch built on the **ESP32**, developed as part of a custom hardware product lineup. The firmware is written in C using the **ESP-IDF** framework and integrates natively with **Home Assistant** via a custom dedicated [HAOS BLE integration](https://github.com/ikok07/kok-products-ble-haos-integration).
 
 ---
 
@@ -96,7 +96,7 @@ components/
 
 ## Home Assistant Integration
 
-Install the [kok-products BLE HAOS integration](https://github.com/ikok07/kok-products-ble-haos-integration) in your Home Assistant instance. The device advertises the identifier service UUID and manufacturer data in its BLE advertisement so that the integration can automatically recognise and add it.
+Install the [HAOS BLE integration](https://github.com/ikok07/kok-products-ble-haos-integration) in your Home Assistant instance. The device advertises the identifier service UUID and manufacturer data in its BLE advertisement so that the integration can automatically recognise and add it.
 
 See [`docs/haos_compatibility.md`](docs/haos_compatibility.md) for the full BLE advertisement requirements.
 
