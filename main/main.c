@@ -9,6 +9,8 @@
 #include "light_control.h"
 #include "status_led.h"
 
+// TODO: Update BLE configuration in other projects
+
 void app_main(void) {
     esp_err_t esp_err;
 
